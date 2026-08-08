@@ -5,6 +5,15 @@ import '../../design/app_button.dart';
 import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
+import 'receipt_extraction.dart';
+import 'receipt_review_screen.dart';
+
+class ReceiptScanResult {
+  const ReceiptScanResult({required this.receipt, required this.extraction});
+
+  final XFile receipt;
+  final ReceiptExtraction extraction;
+}
 
 class ReceiptScannerScreen extends StatefulWidget {
   const ReceiptScannerScreen({super.key});
@@ -25,7 +34,6 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     );
 
     if (image == null) return;
-
     if (!mounted) return;
 
     setState(() {
@@ -33,12 +41,23 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
     });
   }
 
-  void _continue() {
+  Future<void> _continue() async {
     final receipt = _receipt;
 
     if (receipt == null) return;
 
-    Navigator.pop(context, receipt);
+    final extraction = await Navigator.push<ReceiptExtraction>(
+      context,
+      MaterialPageRoute(builder: (_) => ReceiptReviewScreen(receipt: receipt)),
+    );
+
+    if (extraction == null) return;
+    if (!mounted) return;
+
+    Navigator.pop(
+      context,
+      ReceiptScanResult(receipt: receipt, extraction: extraction),
+    );
   }
 
   @override
@@ -62,7 +81,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
               const SizedBox(height: AppSpacing.sm),
 
               Text(
-                'Add a clear image of the receipt. We’ll extract the important details next.',
+                'Choose a clear receipt image so NowArkived can extract the important details.',
                 style: AppTypography.bodySecondary,
               ),
 
@@ -80,7 +99,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: _receipt == null
-                        ? _EmptyReceiptState(onChoose: _chooseReceipt)
+                        ? const _EmptyReceiptState()
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: Image.network(
@@ -88,9 +107,15 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 return Center(
-                                  child: Text(
-                                    _receipt!.name,
-                                    style: AppTypography.body,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.lg,
+                                    ),
+                                    child: Text(
+                                      _receipt!.name,
+                                      textAlign: TextAlign.center,
+                                      style: AppTypography.body,
+                                    ),
                                   ),
                                 );
                               },
@@ -100,21 +125,20 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.lg),
-
               if (_receipt != null) ...[
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   _receipt!.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodySecondary,
                 ),
-
-                const SizedBox(height: AppSpacing.md),
               ],
 
+              const SizedBox(height: AppSpacing.lg),
+
               AppButton(
-                label: _receipt == null ? 'Choose receipt' : 'Use receipt',
+                label: _receipt == null ? 'Choose receipt' : 'Extract details',
                 onPressed: _receipt == null ? _chooseReceipt : _continue,
               ),
             ],
@@ -126,9 +150,7 @@ class _ReceiptScannerScreenState extends State<ReceiptScannerScreen> {
 }
 
 class _EmptyReceiptState extends StatelessWidget {
-  const _EmptyReceiptState({required this.onChoose});
-
-  final VoidCallback onChoose;
+  const _EmptyReceiptState();
 
   @override
   Widget build(BuildContext context) {

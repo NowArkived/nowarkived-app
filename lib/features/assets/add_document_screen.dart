@@ -1,11 +1,11 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../design/app_button.dart';
 import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
+import '../scan/receipt_extraction.dart';
 import '../scan/receipt_scanner_screen.dart';
 import 'models/asset_document.dart';
 
@@ -18,6 +18,8 @@ class AddDocumentScreen extends StatefulWidget {
 
 class _AddDocumentScreenState extends State<AddDocumentScreen> {
   String? _selectedFileName;
+  ReceiptExtraction? _receiptExtraction;
+
   AssetDocumentType _selectedType = AssetDocumentType.receipt;
 
   Future<void> _pickFile() async {
@@ -31,20 +33,22 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
 
     setState(() {
       _selectedFileName = result.files.first.name;
+      _receiptExtraction = null;
     });
   }
 
   Future<void> _scanReceipt() async {
-    final receipt = await Navigator.push<XFile>(
+    final result = await Navigator.push<ReceiptScanResult>(
       context,
       MaterialPageRoute(builder: (_) => const ReceiptScannerScreen()),
     );
 
-    if (receipt == null) return;
+    if (result == null) return;
 
     setState(() {
-      _selectedFileName = receipt.name;
+      _selectedFileName = result.receipt.name;
       _selectedType = AssetDocumentType.receipt;
+      _receiptExtraction = result.extraction;
     });
   }
 
@@ -82,6 +86,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,7 +118,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             _DocumentAction(
               icon: Icons.document_scanner_outlined,
               title: 'Scan receipt',
-              subtitle: 'Capture or choose a receipt image',
+              subtitle: 'Extract purchase details from a receipt',
               onTap: _scanReceipt,
             ),
 
@@ -126,7 +134,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             if (_selectedFileName != null) ...[
               const SizedBox(height: AppSpacing.xl),
 
-              Text('Selected', style: AppTypography.bodySecondary),
+              Text('Selected document', style: AppTypography.bodySecondary),
 
               const SizedBox(height: AppSpacing.sm),
 
@@ -136,6 +144,55 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
               ),
+
+              if (_receiptExtraction != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Extracted details',
+                        style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      if (_receiptExtraction!.merchant != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          _receiptExtraction!.merchant!,
+                          style: AppTypography.bodySecondary,
+                        ),
+                      ],
+
+                      if (_receiptExtraction!.purchaseDate != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          _formatDate(_receiptExtraction!.purchaseDate!),
+                          style: AppTypography.bodySecondary,
+                        ),
+                      ],
+
+                      if (_receiptExtraction!.total != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Total: ${_receiptExtraction!.total!.toStringAsFixed(2)}',
+                          style: AppTypography.bodySecondary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: AppSpacing.xl),
 
@@ -219,7 +276,9 @@ class _DocumentAction extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+
                   const SizedBox(height: AppSpacing.xs),
+
                   Text(subtitle, style: AppTypography.bodySecondary),
                 ],
               ),
