@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '/design/app_colors.dart';
-import '/design/app_typography.dart';
+import 'design/app_colors.dart';
+import 'design/app_typography.dart';
 import 'features/splash/splash_screen.dart';
 
 void main() {
@@ -17,11 +17,13 @@ class NowArkivedApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'NowArkived',
       theme: ThemeData(
+        useMaterial3: true,
         scaffoldBackgroundColor: AppColors.background,
-        colorScheme: ColorScheme.light(
+        colorScheme: const ColorScheme.light(
           primary: AppColors.primary,
           secondary: AppColors.accent,
           surface: AppColors.surface,
+          error: AppColors.error,
         ),
         textTheme: TextTheme(
           displayLarge: AppTypography.title,
@@ -30,6 +32,28 @@ class NowArkivedApp extends StatelessWidget {
           bodyMedium: AppTypography.body,
           bodySmall: AppTypography.bodySecondary,
           labelLarge: AppTypography.button,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.surface,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          labelStyle: AppTypography.bodySecondary,
+          hintStyle: AppTypography.bodySecondary,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.accent),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
         ),
       ),
       home: const SplashScreen(),

@@ -5,6 +5,7 @@ import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
 import 'models/asset.dart';
+import 'models/asset_category.dart';
 
 class CreateAssetScreen extends StatefulWidget {
   const CreateAssetScreen({super.key});
@@ -15,18 +16,32 @@ class CreateAssetScreen extends StatefulWidget {
 
 class _CreateAssetScreenState extends State<CreateAssetScreen> {
   final _nameController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _serialNumberController = TextEditingController();
 
+  AssetCategory? _category;
   DateTime? _purchaseDate;
   DateTime? _warrantyExpiry;
 
+  bool get _canSave {
+    return _nameController.text.trim().isNotEmpty && _category != null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_refresh);
+  }
+
   @override
   void dispose() {
+    _nameController.removeListener(_refresh);
     _nameController.dispose();
-    _categoryController.dispose();
     _serialNumberController.dispose();
     super.dispose();
+  }
+
+  void _refresh() {
+    setState(() {});
   }
 
   Future<void> _selectPurchaseDate() async {
@@ -61,18 +76,14 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
   }
 
   void _saveAsset() {
-    final name = _nameController.text.trim();
-    final category = _categoryController.text.trim();
-    final serialNumber = _serialNumberController.text.trim();
+    if (!_canSave) return;
 
-    if (name.isEmpty || category.isEmpty) {
-      return;
-    }
+    final serialNumber = _serialNumberController.text.trim();
 
     final asset = Asset(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: name,
-      category: category,
+      name: _nameController.text.trim(),
+      category: _category!.label,
       serialNumber: serialNumber.isEmpty ? null : serialNumber,
       purchaseDate: _purchaseDate,
       warrantyExpiry: _warrantyExpiry,
@@ -101,15 +112,19 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             Text('What do you own?', style: AppTypography.title),
+
             const SizedBox(height: AppSpacing.sm),
+
             Text(
-              'Capture the important details now. You can add documents later.',
+              'Add the essentials. You can attach ownership documents afterwards.',
               style: AppTypography.bodySecondary,
             ),
+
             const SizedBox(height: AppSpacing.xl),
 
             TextField(
               controller: _nameController,
+              autofocus: true,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Asset name',
@@ -119,13 +134,23 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
 
             const SizedBox(height: AppSpacing.md),
 
-            TextField(
-              controller: _categoryController,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                hintText: 'Electronics',
-              ),
+            DropdownButtonFormField<AssetCategory>(
+              initialValue: _category,
+              decoration: const InputDecoration(labelText: 'Category'),
+              hint: const Text('Select category'),
+              items: AssetCategory.values
+                  .map(
+                    (category) => DropdownMenuItem(
+                      value: category,
+                      child: Text(category.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (category) {
+                setState(() {
+                  _category = category;
+                });
+              },
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -160,7 +185,10 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            AppButton(label: 'Save asset', onPressed: _saveAsset),
+            AppButton(
+              label: 'Save asset',
+              onPressed: _canSave ? _saveAsset : null,
+            ),
           ],
         ),
       ),
