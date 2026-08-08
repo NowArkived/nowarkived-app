@@ -10,6 +10,7 @@ import '../assets/create_asset_screen.dart';
 import '../assets/data/asset_storage.dart';
 import '../assets/data/sample_assets.dart';
 import '../assets/models/asset.dart';
+import '../reminders/warranty_reminder.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,9 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return _assets.where((asset) {
       final matchesName = asset.name.toLowerCase().contains(query);
-
       final matchesCategory = asset.category.toLowerCase().contains(query);
-
       final matchesSerial =
           asset.serialNumber?.toLowerCase().contains(query) ?? false;
 
@@ -127,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredAssets = _filteredAssets;
+    final reminders = buildWarrantyReminders(_assets);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -179,10 +179,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                   filled: true,
                   fillColor: AppColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(color: AppColors.border),
@@ -193,6 +189,98 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+
+              if (!_isLoading &&
+                  reminders.isNotEmpty &&
+                  _searchQuery.isEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Attention', style: AppTypography.heading),
+                    ),
+                    Text(
+                      '${reminders.length}',
+                      style: AppTypography.bodySecondary,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppSpacing.sm),
+
+                SizedBox(
+                  height: 92,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: reminders.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: AppSpacing.sm),
+                    itemBuilder: (context, index) {
+                      final reminder = reminders[index];
+
+                      final expired =
+                          reminder.status == WarrantyReminderStatus.expired;
+
+                      return InkWell(
+                        onTap: () => _openAsset(reminder.asset),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: 280,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            border: Border.all(
+                              color: expired
+                                  ? AppColors.error
+                                  : AppColors.warning,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                expired
+                                    ? Icons.error_outline
+                                    : Icons.schedule_outlined,
+                                color: expired
+                                    ? AppColors.error
+                                    : AppColors.warning,
+                              ),
+
+                              const SizedBox(width: AppSpacing.md),
+
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      reminder.asset.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.body.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      reminder.message,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodySecondary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
 
               const SizedBox(height: AppSpacing.lg),
 
@@ -213,16 +301,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 32,
                               color: AppColors.textSecondary,
                             ),
-
                             const SizedBox(height: AppSpacing.md),
-
                             Text(
                               'No assets found',
                               style: AppTypography.heading,
                             ),
-
                             const SizedBox(height: AppSpacing.sm),
-
                             Text(
                               'Try another name, category or document.',
                               textAlign: TextAlign.center,
@@ -269,9 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-
                                         const SizedBox(height: AppSpacing.xs),
-
                                         Text(
                                           asset.documents.isEmpty
                                               ? asset.category
