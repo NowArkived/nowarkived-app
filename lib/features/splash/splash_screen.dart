@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '/design/app_colors.dart';
-import '/features/home/home_screen.dart';
+import '../../design/app_colors.dart';
+import '../../design/app_typography.dart';
+import '../home/home_screen.dart';
+import '../onboarding/onboarding_preferences.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,21 +16,25 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
+ @override
+void initState() {
+  super.initState();
 
-    Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
+  Timer(const Duration(seconds: 2), () async {
+    if (!mounted) return;
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
-        ),
-      );
-    });
-  }
+    final completed = await OnboardingPreferences.isCompleted();
 
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            completed ? const HomeScreen() : const OnboardingScreen(),
+      ),
+    );
+  });
+}
   @override
   Widget build(BuildContext context) {
     return const Scaffold(

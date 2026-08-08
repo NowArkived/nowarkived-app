@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '/design/app_colors.dart';
 import '/design/app_typography.dart';
-import '/features/splash/splash_screen.dart';
+import 'features/splash/splash_screen.dart';
 
 void main() {
   runApp(const NowArkivedApp());
