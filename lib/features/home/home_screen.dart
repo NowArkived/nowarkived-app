@@ -7,6 +7,7 @@ import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
 import '../assets/asset_detail_screen.dart';
 import '../assets/create_asset_screen.dart';
+import '../assets/data/asset_storage.dart';
 import '../assets/data/sample_assets.dart';
 import '../assets/models/asset.dart';
 
@@ -18,13 +19,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final List<Asset> _assets;
+  List<Asset> _assets = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _assets = List<Asset>.from(sampleAssets);
+    _loadAssets();
   }
+
+  Future<void> _loadAssets() async {
+  final storedAssets = await AssetStorage.loadAssets();
+
+  final assets = storedAssets ?? List<Asset>.from(sampleAssets);
+
+  if (storedAssets == null) {
+    await AssetStorage.saveAssets(assets);
+  }
+
+  if (!mounted) return;
+
+  setState(() {
+    _assets = assets;
+    _isLoading = false;
+  });
+}
 
   Future<void> _openCreateAsset() async {
     final asset = await Navigator.push<Asset>(
@@ -37,6 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _assets.insert(0, asset);
     });
+
+    await AssetStorage.saveAssets(_assets);
   }
 
   IconData _iconForCategory(String category) {
@@ -76,71 +97,77 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               Expanded(
-                child: ListView.separated(
-                  itemCount: _assets.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: AppSpacing.md),
-                  itemBuilder: (context, index) {
-                    final asset = _assets[index];
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accent,
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: _assets.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final asset = _assets[index];
 
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AssetDetailScreen(asset: asset),
-                          ),
-                        );
-                      },
-                      child: AppCard(
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                _iconForCategory(asset.category),
-                                color: AppColors.accent,
-                              ),
-                            ),
-
-                            const SizedBox(width: AppSpacing.md),
-
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AssetDetailScreen(asset: asset),
+                                ),
+                              );
+                            },
+                            child: AppCard(
+                              child: Row(
                                 children: [
-                                  Text(
-                                    asset.name,
-                                    style: AppTypography.body.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.background,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      _iconForCategory(asset.category),
+                                      color: AppColors.accent,
                                     ),
                                   ),
 
-                                  const SizedBox(height: AppSpacing.xs),
+                                  const SizedBox(width: AppSpacing.md),
 
-                                  Text(
-                                    asset.category,
-                                    style: AppTypography.bodySecondary,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          asset.name,
+                                          style: AppTypography.body.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          asset.category,
+                                          style: AppTypography.bodySecondary,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.textSecondary,
                                   ),
                                 ],
                               ),
                             ),
-
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.textSecondary,
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
 
               const SizedBox(height: AppSpacing.md),
