@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../design/app_colors.dart';
-import '../../design/app_typography.dart';
 import '../home/home_screen.dart';
 import '../onboarding/onboarding_preferences.dart';
 import '../onboarding/onboarding_screen.dart';

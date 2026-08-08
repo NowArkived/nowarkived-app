@@ -60,6 +60,25 @@ class _HomeScreenState extends State<HomeScreen> {
     await AssetStorage.saveAssets(_assets);
   }
 
+  Future<void> _openAsset(Asset asset) async {
+    final updatedAsset = await Navigator.push<Asset>(
+      context,
+      MaterialPageRoute(builder: (_) => AssetDetailScreen(asset: asset)),
+    );
+
+    if (updatedAsset == null) return;
+
+    final index = _assets.indexWhere((item) => item.id == updatedAsset.id);
+
+    if (index == -1) return;
+
+    setState(() {
+      _assets[index] = updatedAsset;
+    });
+
+    await AssetStorage.saveAssets(_assets);
+  }
+
   IconData _iconForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'electronics':
@@ -111,15 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final asset = _assets[index];
 
                           return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      AssetDetailScreen(asset: asset),
-                                ),
-                              );
-                            },
+                            onTap: () => _openAsset(asset),
                             child: AppCard(
                               child: Row(
                                 children: [
@@ -151,7 +162,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: AppSpacing.xs),
                                         Text(
-                                          asset.category,
+                                          asset.documents.isEmpty
+                                              ? asset.category
+                                              : '${asset.category} · '
+                                                    '${asset.documents.length} '
+                                                    '${asset.documents.length == 1 ? 'document' : 'documents'}',
                                           style: AppTypography.bodySecondary,
                                         ),
                                       ],

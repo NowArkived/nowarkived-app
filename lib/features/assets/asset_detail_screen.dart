@@ -1,15 +1,48 @@
 import 'package:flutter/material.dart';
 
+import '../../design/app_button.dart';
 import '../../design/app_card.dart';
 import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
+import 'add_document_screen.dart';
 import 'models/asset.dart';
+import 'models/asset_document.dart';
 
-class AssetDetailScreen extends StatelessWidget {
+class AssetDetailScreen extends StatefulWidget {
   const AssetDetailScreen({super.key, required this.asset});
 
   final Asset asset;
+
+  @override
+  State<AssetDetailScreen> createState() => _AssetDetailScreenState();
+}
+
+class _AssetDetailScreenState extends State<AssetDetailScreen> {
+  late Asset _asset;
+
+  @override
+  void initState() {
+    super.initState();
+    _asset = widget.asset;
+  }
+
+  Future<void> _addDocument() async {
+    final document = await Navigator.push<AssetDocument>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddDocumentScreen()),
+    );
+
+    if (document == null) return;
+
+    setState(() {
+      _asset = _asset.copyWith(documents: [..._asset.documents, document]);
+    });
+  }
+
+  void _goBack() {
+    Navigator.pop(context, _asset);
+  }
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -17,31 +50,21 @@ class AssetDetailScreen extends StatelessWidget {
 
   String _warrantyStatus(DateTime expiry) {
     final now = DateTime.now();
-
     final today = DateTime(now.year, now.month, now.day);
 
     final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
 
     final days = expiryDate.difference(today).inDays;
 
-    if (days < 0) {
-      return 'Expired';
-    }
-
-    if (days == 0) {
-      return 'Expires today';
-    }
-
-    if (days == 1) {
-      return '1 day remaining';
-    }
+    if (days < 0) return 'Expired';
+    if (days == 0) return 'Expires today';
+    if (days == 1) return '1 day remaining';
 
     return '$days days remaining';
   }
 
   bool _isWarrantyExpired(DateTime expiry) {
     final now = DateTime.now();
-
     final today = DateTime(now.year, now.month, now.day);
 
     final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
@@ -49,14 +72,38 @@ class AssetDetailScreen extends StatelessWidget {
     return expiryDate.isBefore(today);
   }
 
+  String _documentTypeLabel(AssetDocumentType type) {
+    switch (type) {
+      case AssetDocumentType.receipt:
+        return 'Receipt';
+      case AssetDocumentType.warranty:
+        return 'Warranty';
+      case AssetDocumentType.manual:
+        return 'Manual';
+      case AssetDocumentType.insurance:
+        return 'Insurance';
+      case AssetDocumentType.registration:
+        return 'Registration';
+      case AssetDocumentType.serviceRecord:
+        return 'Service record';
+      case AssetDocumentType.other:
+        return 'Other';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         elevation: 0,
+        leading: IconButton(
+          onPressed: _goBack,
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+        ),
         title: Text('Asset details', style: AppTypography.heading),
       ),
       body: SafeArea(
@@ -81,11 +128,11 @@ class AssetDetailScreen extends StatelessWidget {
 
             const SizedBox(height: AppSpacing.lg),
 
-            Text(asset.name, style: AppTypography.title),
+            Text(_asset.name, style: AppTypography.title),
 
             const SizedBox(height: AppSpacing.sm),
 
-            Text(asset.category, style: AppTypography.bodySecondary),
+            Text(_asset.category, style: AppTypography.bodySecondary),
 
             const SizedBox(height: AppSpacing.xl),
 
@@ -97,37 +144,37 @@ class AssetDetailScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  _DetailRow(label: 'Category', value: asset.category),
+                  _DetailRow(label: 'Category', value: _asset.category),
 
-                  if (asset.serialNumber != null) ...[
+                  if (_asset.serialNumber != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     _DetailRow(
                       label: 'Serial number',
-                      value: asset.serialNumber!,
+                      value: _asset.serialNumber!,
                     ),
                   ],
 
-                  if (asset.purchaseDate != null) ...[
+                  if (_asset.purchaseDate != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     _DetailRow(
                       label: 'Purchased',
-                      value: _formatDate(asset.purchaseDate!),
+                      value: _formatDate(_asset.purchaseDate!),
                     ),
                   ],
 
-                  if (asset.warrantyExpiry != null) ...[
+                  if (_asset.warrantyExpiry != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     _DetailRow(
                       label: 'Warranty',
-                      value: _formatDate(asset.warrantyExpiry!),
+                      value: _formatDate(_asset.warrantyExpiry!),
                     ),
 
                     const SizedBox(height: AppSpacing.sm),
 
                     Text(
-                      _warrantyStatus(asset.warrantyExpiry!),
+                      _warrantyStatus(_asset.warrantyExpiry!),
                       style: AppTypography.bodySecondary.copyWith(
-                        color: _isWarrantyExpired(asset.warrantyExpiry!)
+                        color: _isWarrantyExpired(_asset.warrantyExpiry!)
                             ? AppColors.error
                             : AppColors.accent,
                         fontWeight: FontWeight.w500,
@@ -139,7 +186,7 @@ class AssetDetailScreen extends StatelessWidget {
 
                   _DetailRow(
                     label: 'Added',
-                    value: _formatDate(asset.createdAt),
+                    value: _formatDate(_asset.createdAt),
                   ),
                 ],
               ),
@@ -157,7 +204,7 @@ class AssetDetailScreen extends StatelessWidget {
                         child: Text('Documents', style: AppTypography.heading),
                       ),
                       Text(
-                        '${asset.documents.length}',
+                        '${_asset.documents.length}',
                         style: AppTypography.bodySecondary,
                       ),
                     ],
@@ -165,35 +212,61 @@ class AssetDetailScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSpacing.md),
 
-                  if (asset.documents.isEmpty)
+                  if (_asset.documents.isEmpty)
                     Text(
                       'No documents added yet.',
                       style: AppTypography.bodySecondary,
                     )
                   else
-                    ...asset.documents.map(
+                    ..._asset.documents.map(
                       (document) => Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.description_outlined,
-                              size: 20,
-                              color: AppColors.accent,
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.description_outlined,
+                                color: AppColors.accent,
+                                size: 20,
+                              ),
                             ),
 
                             const SizedBox(width: AppSpacing.md),
 
                             Expanded(
-                              child: Text(
-                                document.name,
-                                style: AppTypography.body,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    document.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.body.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    _documentTypeLabel(document.type),
+                                    style: AppTypography.bodySecondary,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
+
+                  const SizedBox(height: AppSpacing.sm),
+
+                  AppButton(label: 'Add document', onPressed: _addDocument),
                 ],
               ),
             ),
@@ -216,9 +289,7 @@ class _DetailRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: Text(label, style: AppTypography.bodySecondary)),
-
         const SizedBox(width: AppSpacing.md),
-
         Flexible(
           child: Text(
             value,

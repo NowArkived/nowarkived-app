@@ -21,6 +21,26 @@ class Asset {
     this.documents = const [],
   });
 
+  Asset copyWith({
+    String? name,
+    String? category,
+    String? serialNumber,
+    DateTime? purchaseDate,
+    DateTime? warrantyExpiry,
+    List<AssetDocument>? documents,
+  }) {
+    return Asset(
+      id: id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      serialNumber: serialNumber ?? this.serialNumber,
+      purchaseDate: purchaseDate ?? this.purchaseDate,
+      warrantyExpiry: warrantyExpiry ?? this.warrantyExpiry,
+      createdAt: createdAt,
+      documents: documents ?? this.documents,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
