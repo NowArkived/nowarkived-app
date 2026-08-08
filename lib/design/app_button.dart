@@ -4,11 +4,7 @@ import 'app_colors.dart';
 import 'app_typography.dart';
 
 class AppButton extends StatelessWidget {
-  const AppButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-  });
+  const AppButton({super.key, required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback? onPressed;
@@ -28,10 +24,7 @@ class AppButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: Text(
-          label,
-          style: AppTypography.button,
-        ),
+        child: Text(label, style: AppTypography.button),
       ),
     );
   }

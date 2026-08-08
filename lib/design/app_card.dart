@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppCard extends StatelessWidget {
-  const AppCard({
-    super.key,
-    required this.child,
-  });
+  const AppCard({super.key, required this.child});
 
   final Widget child;
 
@@ -17,9 +14,7 @@ class AppCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(16),
       ),
       child: child,

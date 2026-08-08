@@ -20,10 +20,7 @@ class OnboardingScreen extends StatelessWidget {
             children: [
               const Spacer(),
 
-              Text(
-                'Everything you own.',
-                style: AppTypography.title,
-              ),
+              Text('Everything you own.', style: AppTypography.title),
 
               const SizedBox(height: AppSpacing.md),
 
@@ -36,18 +33,16 @@ class OnboardingScreen extends StatelessWidget {
 
               AppButton(
                 label: 'Get Started',
-               onPressed: () async {
-  await OnboardingPreferences.setCompleted();
+                onPressed: () async {
+                  await OnboardingPreferences.setCompleted();
 
-  if (!context.mounted) return;
+                  if (!context.mounted) return;
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const HomeScreen(),
-    ),
-  );
-},
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  );
+                },
               ),
             ],
           ),

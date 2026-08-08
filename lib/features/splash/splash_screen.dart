@@ -16,25 +16,26 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
- @override
-void initState() {
-  super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-  Timer(const Duration(seconds: 2), () async {
-    if (!mounted) return;
+    Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
 
-    final completed = await OnboardingPreferences.isCompleted();
+      final completed = await OnboardingPreferences.isCompleted();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) =>
-            completed ? const HomeScreen() : const OnboardingScreen(),
-      ),
-    );
-  });
-}
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              completed ? const HomeScreen() : const OnboardingScreen(),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return const Scaffold(

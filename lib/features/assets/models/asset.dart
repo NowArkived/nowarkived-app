@@ -1,3 +1,5 @@
+import 'asset_document.dart';
+
 class Asset {
   final String id;
   final String name;
@@ -6,6 +8,7 @@ class Asset {
   final DateTime? purchaseDate;
   final DateTime? warrantyExpiry;
   final DateTime createdAt;
+  final List<AssetDocument> documents;
 
   const Asset({
     required this.id,
@@ -15,6 +18,7 @@ class Asset {
     this.serialNumber,
     this.purchaseDate,
     this.warrantyExpiry,
+    this.documents = const [],
   });
 
   Map<String, dynamic> toJson() {
@@ -26,10 +30,13 @@ class Asset {
       'purchaseDate': purchaseDate?.toIso8601String(),
       'warrantyExpiry': warrantyExpiry?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+      'documents': documents.map((document) => document.toJson()).toList(),
     };
   }
 
   factory Asset.fromJson(Map<String, dynamic> json) {
+    final documentData = json['documents'] as List<dynamic>? ?? [];
+
     return Asset(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -38,6 +45,13 @@ class Asset {
       purchaseDate: _parseDate(json['purchaseDate']),
       warrantyExpiry: _parseDate(json['warrantyExpiry']),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      documents: documentData
+          .map(
+            (document) => AssetDocument.fromJson(
+              Map<String, dynamic>.from(document as Map),
+            ),
+          )
+          .toList(),
     );
   }
 

@@ -94,19 +94,13 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         elevation: 0,
-        title: Text(
-          'Add asset',
-          style: AppTypography.heading,
-        ),
+        title: Text('Add asset', style: AppTypography.heading),
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Text(
-              'What do you own?',
-              style: AppTypography.title,
-            ),
+            Text('What do you own?', style: AppTypography.title),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Capture the important details now. You can add documents later.',
@@ -166,10 +160,7 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            AppButton(
-              label: 'Save asset',
-              onPressed: _saveAsset,
-            ),
+            AppButton(label: 'Save asset', onPressed: _saveAsset),
           ],
         ),
       ),
@@ -206,15 +197,9 @@ class _DateField extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: AppTypography.bodySecondary,
-                  ),
+                  Text(label, style: AppTypography.bodySecondary),
                   const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    value,
-                    style: AppTypography.body,
-                  ),
+                  Text(value, style: AppTypography.body),
                 ],
               ),
             ),

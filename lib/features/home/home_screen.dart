@@ -29,21 +29,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAssets() async {
-  final storedAssets = await AssetStorage.loadAssets();
+    final storedAssets = await AssetStorage.loadAssets();
 
-  final assets = storedAssets ?? List<Asset>.from(sampleAssets);
+    final assets = storedAssets ?? List<Asset>.from(sampleAssets);
 
-  if (storedAssets == null) {
-    await AssetStorage.saveAssets(assets);
+    if (storedAssets == null) {
+      await AssetStorage.saveAssets(assets);
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _assets = assets;
+      _isLoading = false;
+    });
   }
-
-  if (!mounted) return;
-
-  setState(() {
-    _assets = assets;
-    _isLoading = false;
-  });
-}
 
   Future<void> _openCreateAsset() async {
     final asset = await Navigator.push<Asset>(

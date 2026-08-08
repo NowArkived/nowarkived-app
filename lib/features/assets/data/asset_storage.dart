@@ -23,20 +23,14 @@ class AssetStorage {
     final decoded = jsonDecode(storedAssets) as List<dynamic>;
 
     return decoded
-        .map(
-          (item) => Asset.fromJson(
-            Map<String, dynamic>.from(item as Map),
-          ),
-        )
+        .map((item) => Asset.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
   static Future<void> saveAssets(List<Asset> assets) async {
     final prefs = await SharedPreferences.getInstance();
 
-    final encoded = jsonEncode(
-      assets.map((asset) => asset.toJson()).toList(),
-    );
+    final encoded = jsonEncode(assets.map((asset) => asset.toJson()).toList());
 
     await prefs.setString(_assetsKey, encoded);
   }

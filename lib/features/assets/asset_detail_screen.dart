@@ -151,14 +151,49 @@ class AssetDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Documents', style: AppTypography.heading),
-
-                  const SizedBox(height: AppSpacing.sm),
-
-                  Text(
-                    'Receipts, warranties and manuals will appear here.',
-                    style: AppTypography.bodySecondary,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('Documents', style: AppTypography.heading),
+                      ),
+                      Text(
+                        '${asset.documents.length}',
+                        style: AppTypography.bodySecondary,
+                      ),
+                    ],
                   ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  if (asset.documents.isEmpty)
+                    Text(
+                      'No documents added yet.',
+                      style: AppTypography.bodySecondary,
+                    )
+                  else
+                    ...asset.documents.map(
+                      (document) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.description_outlined,
+                              size: 20,
+                              color: AppColors.accent,
+                            ),
+
+                            const SizedBox(width: AppSpacing.md),
+
+                            Expanded(
+                              child: Text(
+                                document.name,
+                                style: AppTypography.body,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
