@@ -3,8 +3,8 @@ class Asset {
   final String name;
   final String category;
   final String? serialNumber;
-  final String? purchaseDate;
-  final String? warrantyExpiry;
+  final DateTime? purchaseDate;
+  final DateTime? warrantyExpiry;
   final DateTime createdAt;
 
   const Asset({
@@ -23,8 +23,8 @@ class Asset {
       'name': name,
       'category': category,
       'serialNumber': serialNumber,
-      'purchaseDate': purchaseDate,
-      'warrantyExpiry': warrantyExpiry,
+      'purchaseDate': purchaseDate?.toIso8601String(),
+      'warrantyExpiry': warrantyExpiry?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -35,9 +35,17 @@ class Asset {
       name: json['name'] as String,
       category: json['category'] as String,
       serialNumber: json['serialNumber'] as String?,
-      purchaseDate: json['purchaseDate'] as String?,
-      warrantyExpiry: json['warrantyExpiry'] as String?,
+      purchaseDate: _parseDate(json['purchaseDate']),
+      warrantyExpiry: _parseDate(json['warrantyExpiry']),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null || value is! String) {
+      return null;
+    }
+
+    return DateTime.tryParse(value);
   }
 }

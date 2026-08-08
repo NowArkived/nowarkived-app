@@ -17,27 +17,53 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
   final _nameController = TextEditingController();
   final _categoryController = TextEditingController();
   final _serialNumberController = TextEditingController();
-  final _purchaseDateController = TextEditingController();
-  final _warrantyExpiryController = TextEditingController();
+
+  DateTime? _purchaseDate;
+  DateTime? _warrantyExpiry;
 
   @override
   void dispose() {
     _nameController.dispose();
     _categoryController.dispose();
     _serialNumberController.dispose();
-    _purchaseDateController.dispose();
-    _warrantyExpiryController.dispose();
     super.dispose();
   }
 
-  String? _optionalValue(TextEditingController controller) {
-    final value = controller.text.trim();
-    return value.isEmpty ? null : value;
+  Future<void> _selectPurchaseDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate ?? DateTime.now(),
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now(),
+    );
+
+    if (date == null) return;
+
+    setState(() {
+      _purchaseDate = date;
+    });
+  }
+
+  Future<void> _selectWarrantyExpiry() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate:
+          _warrantyExpiry ?? DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+
+    if (date == null) return;
+
+    setState(() {
+      _warrantyExpiry = date;
+    });
   }
 
   void _saveAsset() {
     final name = _nameController.text.trim();
     final category = _categoryController.text.trim();
+    final serialNumber = _serialNumberController.text.trim();
 
     if (name.isEmpty || category.isEmpty) {
       return;
@@ -47,13 +73,17 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       category: category,
-      serialNumber: _optionalValue(_serialNumberController),
-      purchaseDate: _optionalValue(_purchaseDateController),
-      warrantyExpiry: _optionalValue(_warrantyExpiryController),
+      serialNumber: serialNumber.isEmpty ? null : serialNumber,
+      purchaseDate: _purchaseDate,
+      warrantyExpiry: _warrantyExpiry,
       createdAt: DateTime.now(),
     );
 
     Navigator.pop(context, asset);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -77,14 +107,11 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
               'What do you own?',
               style: AppTypography.title,
             ),
-
             const SizedBox(height: AppSpacing.sm),
-
             Text(
-              'Capture the important details now. Documents can be added later.',
+              'Capture the important details now. You can add documents later.',
               style: AppTypography.bodySecondary,
             ),
-
             const SizedBox(height: AppSpacing.xl),
 
             TextField(
@@ -111,34 +138,30 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
 
             TextField(
               controller: _serialNumberController,
-              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Serial number',
                 hintText: 'Optional',
               ),
             ),
 
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
 
-            TextField(
-              controller: _purchaseDateController,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Purchase date',
-                hintText: 'e.g. 08/08/2026',
-              ),
+            _DateField(
+              label: 'Purchase date',
+              value: _purchaseDate == null
+                  ? 'Add purchase date'
+                  : _formatDate(_purchaseDate!),
+              onTap: _selectPurchaseDate,
             ),
 
             const SizedBox(height: AppSpacing.md),
 
-            TextField(
-              controller: _warrantyExpiryController,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _saveAsset(),
-              decoration: const InputDecoration(
-                labelText: 'Warranty expiry',
-                hintText: 'e.g. 08/08/2027',
-              ),
+            _DateField(
+              label: 'Warranty expiry',
+              value: _warrantyExpiry == null
+                  ? 'Add warranty expiry'
+                  : _formatDate(_warrantyExpiry!),
+              onTap: _selectWarrantyExpiry,
             ),
 
             const SizedBox(height: AppSpacing.xl),
@@ -146,6 +169,59 @@ class _CreateAssetScreenState extends State<CreateAssetScreen> {
             AppButton(
               label: 'Save asset',
               onPressed: _saveAsset,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTypography.bodySecondary,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    value,
+                    style: AppTypography.body,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.calendar_today_outlined,
+              size: 20,
+              color: AppColors.textSecondary,
             ),
           ],
         ),
