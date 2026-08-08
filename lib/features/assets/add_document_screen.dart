@@ -1,10 +1,12 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../design/app_button.dart';
 import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
+import '../scan/receipt_scanner_screen.dart';
 import 'models/asset_document.dart';
 
 class AddDocumentScreen extends StatefulWidget {
@@ -15,7 +17,7 @@ class AddDocumentScreen extends StatefulWidget {
 }
 
 class _AddDocumentScreenState extends State<AddDocumentScreen> {
-  PlatformFile? _selectedFile;
+  String? _selectedFileName;
   AssetDocumentType _selectedType = AssetDocumentType.receipt;
 
   Future<void> _pickFile() async {
@@ -28,18 +30,32 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     if (!mounted) return;
 
     setState(() {
-      _selectedFile = result.files.first;
+      _selectedFileName = result.files.first.name;
+    });
+  }
+
+  Future<void> _scanReceipt() async {
+    final receipt = await Navigator.push<XFile>(
+      context,
+      MaterialPageRoute(builder: (_) => const ReceiptScannerScreen()),
+    );
+
+    if (receipt == null) return;
+
+    setState(() {
+      _selectedFileName = receipt.name;
+      _selectedType = AssetDocumentType.receipt;
     });
   }
 
   void _saveDocument() {
-    final file = _selectedFile;
+    final fileName = _selectedFileName;
 
-    if (file == null) return;
+    if (fileName == null) return;
 
     final document = AssetDocument(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: file.name,
+      name: fileName,
       type: _selectedType,
       createdAt: DateTime.now(),
     );
@@ -85,108 +101,131 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             const SizedBox(height: AppSpacing.sm),
 
             Text(
-              'Attach a receipt, warranty, manual, insurance document or other record.',
+              'Scan a receipt or attach an existing ownership document.',
               style: AppTypography.bodySecondary,
             ),
 
             const SizedBox(height: AppSpacing.xl),
 
-            InkWell(
+            _DocumentAction(
+              icon: Icons.document_scanner_outlined,
+              title: 'Scan receipt',
+              subtitle: 'Capture or choose a receipt image',
+              onTap: _scanReceipt,
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            _DocumentAction(
+              icon: Icons.upload_file_outlined,
+              title: 'Choose file',
+              subtitle: 'PDF, image or other document',
               onTap: _pickFile,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
+            ),
+
+            if (_selectedFileName != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+
+              Text('Selected', style: AppTypography.bodySecondary),
+
+              const SizedBox(height: AppSpacing.sm),
+
+              Text(
+                _selectedFileName!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              DropdownButtonFormField<AssetDocumentType>(
+                initialValue: _selectedType,
+                decoration: const InputDecoration(labelText: 'Document type'),
+                items: AssetDocumentType.values
+                    .map(
+                      (type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(_typeLabel(type)),
                       ),
-                      child: const Icon(
-                        Icons.upload_file_outlined,
-                        color: AppColors.accent,
-                      ),
+                    )
+                    .toList(),
+                onChanged: (type) {
+                  if (type == null) return;
+
+                  setState(() {
+                    _selectedType = type;
+                  });
+                },
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              AppButton(label: 'Add document', onPressed: _saveDocument),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DocumentAction extends StatelessWidget {
+  const _DocumentAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.accent),
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
-
-                    const SizedBox(width: AppSpacing.md),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedFile?.name ?? 'Choose a file',
-                            style: AppTypography.body.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-
-                          const SizedBox(height: AppSpacing.xs),
-
-                          Text(
-                            _selectedFile == null
-                                ? 'PDF, image or document'
-                                : 'Tap to choose another file',
-                            style: AppTypography.bodySecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: AppSpacing.sm),
-
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(subtitle, style: AppTypography.bodySecondary),
+                ],
               ),
             ),
 
-            const SizedBox(height: AppSpacing.xl),
-
-            Text(
-              'Document type',
-              style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
-            ),
-
-            const SizedBox(height: AppSpacing.sm),
-
-            DropdownButtonFormField<AssetDocumentType>(
-              initialValue: _selectedType,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-              items: AssetDocumentType.values
-                  .map(
-                    (type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(_typeLabel(type)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (type) {
-                if (type == null) return;
-
-                setState(() {
-                  _selectedType = type;
-                });
-              },
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            AppButton(
-              label: 'Add document',
-              onPressed: _selectedFile == null ? null : _saveDocument,
-            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
