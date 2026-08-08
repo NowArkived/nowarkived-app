@@ -19,13 +19,45 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _searchController = TextEditingController();
+
   List<Asset> _assets = [];
+  String _searchQuery = '';
   bool _isLoading = true;
+
+  List<Asset> get _filteredAssets {
+    final query = _searchQuery.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      return _assets;
+    }
+
+    return _assets.where((asset) {
+      final matchesName = asset.name.toLowerCase().contains(query);
+
+      final matchesCategory = asset.category.toLowerCase().contains(query);
+
+      final matchesSerial =
+          asset.serialNumber?.toLowerCase().contains(query) ?? false;
+
+      final matchesDocument = asset.documents.any(
+        (document) => document.name.toLowerCase().contains(query),
+      );
+
+      return matchesName || matchesCategory || matchesSerial || matchesDocument;
+    }).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     _loadAssets();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAssets() async {
@@ -94,6 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredAssets = _filteredAssets;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -113,7 +147,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: AppTypography.bodySecondary,
               ),
 
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.lg),
+
+              TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search your things',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.textSecondary,
+                  ),
+                  suffixIcon: _searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
 
               Expanded(
                 child: _isLoading
@@ -122,12 +203,40 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.accent,
                         ),
                       )
+                    : filteredAssets.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.search_off_outlined,
+                              size: 32,
+                              color: AppColors.textSecondary,
+                            ),
+
+                            const SizedBox(height: AppSpacing.md),
+
+                            Text(
+                              'No assets found',
+                              style: AppTypography.heading,
+                            ),
+
+                            const SizedBox(height: AppSpacing.sm),
+
+                            Text(
+                              'Try another name, category or document.',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySecondary,
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.separated(
-                        itemCount: _assets.length,
+                        itemCount: filteredAssets.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: AppSpacing.md),
                         itemBuilder: (context, index) {
-                          final asset = _assets[index];
+                          final asset = filteredAssets[index];
 
                           return GestureDetector(
                             onTap: () => _openAsset(asset),
@@ -160,7 +269,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
+
                                         const SizedBox(height: AppSpacing.xs),
+
                                         Text(
                                           asset.documents.isEmpty
                                               ? asset.category
