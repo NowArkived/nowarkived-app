@@ -20,8 +20,14 @@ class ReceiptReviewScreen extends StatefulWidget {
 class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
   final ReceiptExtractor _extractor = ReceiptExtractor();
 
+  final _merchantController = TextEditingController();
+  final _totalController = TextEditingController();
+
   ReceiptExtraction? _extraction;
+  DateTime? _purchaseDate;
+
   bool _isExtracting = true;
+  bool _showRawText = false;
   String? _errorMessage;
 
   @override
@@ -30,17 +36,31 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
     _extractReceipt();
   }
 
+  @override
+  void dispose() {
+    _merchantController.dispose();
+    _totalController.dispose();
+    super.dispose();
+  }
+
   Future<void> _extractReceipt() async {
     try {
       final extraction = await _extractor.extract(widget.receipt);
 
       if (!mounted) return;
 
+      _merchantController.text = extraction.merchant ?? '';
+
+      if (extraction.total != null) {
+        _totalController.text = extraction.total!.toStringAsFixed(2);
+      }
+
       setState(() {
         _extraction = extraction;
+        _purchaseDate = extraction.purchaseDate;
         _isExtracting = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
@@ -48,6 +68,42 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
         _isExtracting = false;
       });
     }
+  }
+
+  Future<void> _selectPurchaseDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate ?? DateTime.now(),
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now(),
+    );
+
+    if (date == null) return;
+
+    setState(() {
+      _purchaseDate = date;
+    });
+  }
+
+  void _useDetails() {
+    final total = double.tryParse(
+      _totalController.text.trim().replaceAll(',', '').replaceAll('₹', ''),
+    );
+
+    final extraction = ReceiptExtraction(
+      merchant: _merchantController.text.trim().isEmpty
+          ? null
+          : _merchantController.text.trim(),
+      total: total,
+      purchaseDate: _purchaseDate,
+      rawText: _extraction?.rawText,
+    );
+
+    Navigator.pop(context, extraction);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -76,11 +132,15 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const CircularProgressIndicator(color: AppColors.accent),
+
             const SizedBox(height: AppSpacing.lg),
+
             Text('Reading your receipt', style: AppTypography.heading),
+
             const SizedBox(height: AppSpacing.sm),
+
             Text(
-              'Recognizing the text on your document.',
+              'Finding merchant, purchase date and total.',
               textAlign: TextAlign.center,
               style: AppTypography.bodySecondary,
             ),
@@ -95,57 +155,142 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.error_outline, color: AppColors.error, size: 32),
+
             const SizedBox(height: AppSpacing.md),
+
             Text(_errorMessage!, style: AppTypography.heading),
           ],
         ),
       );
     }
 
-    final extraction = _extraction!;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Receipt text', style: AppTypography.title),
+        Text('Check the details', style: AppTypography.title),
 
         const SizedBox(height: AppSpacing.sm),
 
         Text(
-          'NowArkived found the following text.',
+          'We extracted these details from your receipt. Correct anything that looks wrong.',
           style: AppTypography.bodySecondary,
         ),
 
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.xl),
 
-        Expanded(
+        TextField(
+          controller: _merchantController,
+          textInputAction: TextInputAction.next,
+          decoration: const InputDecoration(
+            labelText: 'Merchant',
+            hintText: 'Not found',
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        InkWell(
+          onTap: _selectPurchaseDate,
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: SingleChildScrollView(
-              child: Text(
-                extraction.rawText ?? 'No text found.',
-                style: AppTypography.body,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Purchase date', style: AppTypography.bodySecondary),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _purchaseDate == null
+                            ? 'Not found'
+                            : _formatDate(_purchaseDate!),
+                        style: AppTypography.body,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ),
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        TextField(
+          controller: _totalController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Total',
+            hintText: 'Not found',
           ),
         ),
 
         const SizedBox(height: AppSpacing.lg),
 
-        AppButton(
-          label: 'Use receipt',
-          onPressed: extraction.rawText == null
-              ? null
-              : () {
-                  Navigator.pop(context, extraction);
-                },
+        InkWell(
+          onTap: () {
+            setState(() {
+              _showRawText = !_showRawText;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Raw receipt text',
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _showRawText ? Icons.expand_less : Icons.expand_more,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
         ),
+
+        if (_showRawText)
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  _extraction?.rawText ?? 'No text found.',
+                  style: AppTypography.bodySecondary,
+                ),
+              ),
+            ),
+          )
+        else
+          const Spacer(),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        AppButton(label: 'Use these details', onPressed: _useDetails),
       ],
     );
   }
