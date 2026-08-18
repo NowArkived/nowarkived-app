@@ -22,6 +22,7 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
 
   ReceiptExtraction? _extraction;
   bool _isExtracting = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,18 +31,23 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
   }
 
   Future<void> _extractReceipt() async {
-    final extraction = await _extractor.extract(widget.receipt);
+    try {
+      final extraction = await _extractor.extract(widget.receipt);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _extraction = extraction;
-      _isExtracting = false;
-    });
-  }
+      setState(() {
+        _extraction = extraction;
+        _isExtracting = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+      setState(() {
+        _errorMessage = 'We couldn’t read this receipt.';
+        _isExtracting = false;
+      });
+    }
   }
 
   @override
@@ -57,113 +63,90 @@ class _ReceiptReviewScreenState extends State<ReceiptReviewScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: _isExtracting ? _buildExtracting() : _buildReview(),
+          child: _buildContent(),
         ),
       ),
     );
   }
 
-  Widget _buildExtracting() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(color: AppColors.accent),
+  Widget _buildContent() {
+    if (_isExtracting) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: AppColors.accent),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Reading your receipt', style: AppTypography.heading),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Recognizing the text on your document.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySecondary,
+            ),
+          ],
+        ),
+      );
+    }
 
-          const SizedBox(height: AppSpacing.lg),
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error, size: 32),
+            const SizedBox(height: AppSpacing.md),
+            Text(_errorMessage!, style: AppTypography.heading),
+          ],
+        ),
+      );
+    }
 
-          Text('Reading your receipt', style: AppTypography.heading),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          Text(
-            'Finding merchant, purchase date and total.',
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySecondary,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReview() {
     final extraction = _extraction!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Check the details', style: AppTypography.title),
+        Text('Receipt text', style: AppTypography.title),
 
         const SizedBox(height: AppSpacing.sm),
 
         Text(
-          'Review extracted information before saving it.',
+          'NowArkived found the following text.',
           style: AppTypography.bodySecondary,
         ),
 
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.lg),
 
-        _ExtractionRow(
-          label: 'Merchant',
-          value: extraction.merchant ?? 'Not found',
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SingleChildScrollView(
+              child: Text(
+                extraction.rawText ?? 'No text found.',
+                style: AppTypography.body,
+              ),
+            ),
+          ),
         ),
 
-        const SizedBox(height: AppSpacing.md),
-
-        _ExtractionRow(
-          label: 'Purchase date',
-          value: extraction.purchaseDate == null
-              ? 'Not found'
-              : _formatDate(extraction.purchaseDate!),
-        ),
-
-        const SizedBox(height: AppSpacing.md),
-
-        _ExtractionRow(
-          label: 'Total',
-          value: extraction.total == null
-              ? 'Not found'
-              : extraction.total!.toStringAsFixed(2),
-        ),
-
-        const Spacer(),
+        const SizedBox(height: AppSpacing.lg),
 
         AppButton(
-          label: 'Use these details',
-          onPressed: () {
-            Navigator.pop(context, extraction);
-          },
+          label: 'Use receipt',
+          onPressed: extraction.rawText == null
+              ? null
+              : () {
+                  Navigator.pop(context, extraction);
+                },
         ),
       ],
-    );
-  }
-}
-
-class _ExtractionRow extends StatelessWidget {
-  const _ExtractionRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: AppTypography.bodySecondary)),
-          Text(
-            value,
-            style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
     );
   }
 }
