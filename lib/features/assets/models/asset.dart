@@ -25,17 +25,26 @@ class Asset {
     String? name,
     String? category,
     String? serialNumber,
+    bool clearSerialNumber = false,
     DateTime? purchaseDate,
+    bool clearPurchaseDate = false,
     DateTime? warrantyExpiry,
+    bool clearWarrantyExpiry = false,
     List<AssetDocument>? documents,
   }) {
     return Asset(
       id: id,
       name: name ?? this.name,
       category: category ?? this.category,
-      serialNumber: serialNumber ?? this.serialNumber,
-      purchaseDate: purchaseDate ?? this.purchaseDate,
-      warrantyExpiry: warrantyExpiry ?? this.warrantyExpiry,
+      serialNumber: clearSerialNumber
+          ? null
+          : serialNumber ?? this.serialNumber,
+      purchaseDate: clearPurchaseDate
+          ? null
+          : purchaseDate ?? this.purchaseDate,
+      warrantyExpiry: clearWarrantyExpiry
+          ? null
+          : warrantyExpiry ?? this.warrantyExpiry,
       createdAt: createdAt,
       documents: documents ?? this.documents,
     );

@@ -63,6 +63,52 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     });
   }
 
+  Future<void> _deleteDocument(AssetDocument document) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text('Remove document?', style: AppTypography.heading),
+          content: Text(
+            'This will remove ${document.name} from this asset.',
+            style: AppTypography.body,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: Text('Cancel', style: AppTypography.body),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: Text(
+                'Remove',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _asset = _asset.copyWith(
+        documents: _asset.documents
+            .where((item) => item.id != document.id)
+            .toList(),
+      );
+    });
+  }
+
   Future<void> _deleteAsset() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -114,6 +160,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   String _warrantyStatus(DateTime expiry) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+
     final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
 
     final days = expiryDate.difference(today).inDays;
@@ -127,6 +174,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
 
   bool _isWarrantyExpired(DateTime expiry) {
     final now = DateTime.now();
+
     final today = DateTime(now.year, now.month, now.day);
 
     final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
@@ -153,6 +201,25 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     }
   }
 
+  IconData _documentIcon(AssetDocumentType type) {
+    switch (type) {
+      case AssetDocumentType.receipt:
+        return Icons.receipt_long_outlined;
+      case AssetDocumentType.warranty:
+        return Icons.verified_outlined;
+      case AssetDocumentType.manual:
+        return Icons.menu_book_outlined;
+      case AssetDocumentType.insurance:
+        return Icons.shield_outlined;
+      case AssetDocumentType.registration:
+        return Icons.badge_outlined;
+      case AssetDocumentType.serviceRecord:
+        return Icons.build_outlined;
+      case AssetDocumentType.other:
+        return Icons.description_outlined;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,6 +236,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         title: Text('Asset details', style: AppTypography.heading),
         actions: [
           IconButton(
+            tooltip: 'Edit asset',
             onPressed: _editAsset,
             icon: const Icon(Icons.edit_outlined),
           ),
@@ -252,7 +320,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                       label: 'Warranty',
                       value: _formatDate(_asset.warrantyExpiry!),
                     ),
+
                     const SizedBox(height: AppSpacing.sm),
+
                     Text(
                       _warrantyStatus(_asset.warrantyExpiry!),
                       style: AppTypography.bodySecondary.copyWith(
@@ -295,42 +365,70 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                   const SizedBox(height: AppSpacing.md),
 
                   if (_asset.documents.isEmpty)
-                    Text(
-                      'No documents added yet.',
-                      style: AppTypography.bodySecondary,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
+                      child: Text(
+                        'No documents added yet.',
+                        style: AppTypography.bodySecondary,
+                      ),
                     )
                   else
                     ..._asset.documents.map(
                       (document) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.description_outlined,
-                              color: AppColors.accent,
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    document.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.body.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    _documentTypeLabel(document.type),
-                                    style: AppTypography.bodySecondary,
-                                  ),
-                                ],
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _documentIcon(document.type),
+                                color: AppColors.accent,
                               ),
-                            ),
-                          ],
+
+                              const SizedBox(width: AppSpacing.md),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      document.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.body.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: AppSpacing.xs),
+
+                                    Text(
+                                      _documentTypeLabel(document.type),
+                                      style: AppTypography.bodySecondary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              IconButton(
+                                tooltip: 'Remove document',
+                                onPressed: () {
+                                  _deleteDocument(document);
+                                },
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -360,7 +458,9 @@ class _DetailRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: Text(label, style: AppTypography.bodySecondary)),
+
         const SizedBox(width: AppSpacing.md),
+
         Flexible(
           child: Text(
             value,

@@ -24,16 +24,14 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
   DateTime? _purchaseDate;
   DateTime? _warrantyExpiry;
 
-  bool get _canSave {
-    return _nameController.text.trim().isNotEmpty && _category != null;
-  }
+  bool get _canSave =>
+      _nameController.text.trim().isNotEmpty && _category != null;
 
   @override
   void initState() {
     super.initState();
 
     _nameController = TextEditingController(text: widget.asset.name);
-
     _serialNumberController = TextEditingController(
       text: widget.asset.serialNumber ?? '',
     );
@@ -101,14 +99,17 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
   void _save() {
     if (!_canSave) return;
 
-    final serialNumber = _serialNumberController.text.trim();
+    final serial = _serialNumberController.text.trim();
 
     final updatedAsset = widget.asset.copyWith(
       name: _nameController.text.trim(),
       category: _category!.label,
-      serialNumber: serialNumber.isEmpty ? null : serialNumber,
+      serialNumber: serial.isEmpty ? null : serial,
+      clearSerialNumber: serial.isEmpty,
       purchaseDate: _purchaseDate,
+      clearPurchaseDate: _purchaseDate == null,
       warrantyExpiry: _warrantyExpiry,
+      clearWarrantyExpiry: _warrantyExpiry == null,
     );
 
     Navigator.pop(context, updatedAsset);
@@ -133,14 +134,11 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             Text('Asset details', style: AppTypography.title),
-
             const SizedBox(height: AppSpacing.sm),
-
             Text(
               'Keep your ownership information accurate and up to date.',
               style: AppTypography.bodySecondary,
             ),
-
             const SizedBox(height: AppSpacing.xl),
 
             TextField(
@@ -186,6 +184,13 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
                   ? 'Add purchase date'
                   : _formatDate(_purchaseDate!),
               onTap: _selectPurchaseDate,
+              onClear: _purchaseDate == null
+                  ? null
+                  : () {
+                      setState(() {
+                        _purchaseDate = null;
+                      });
+                    },
             ),
 
             const SizedBox(height: AppSpacing.md),
@@ -196,6 +201,13 @@ class _EditAssetScreenState extends State<EditAssetScreen> {
                   ? 'Add warranty expiry'
                   : _formatDate(_warrantyExpiry!),
               onTap: _selectWarrantyExpiry,
+              onClear: _warrantyExpiry == null
+                  ? null
+                  : () {
+                      setState(() {
+                        _warrantyExpiry = null;
+                      });
+                    },
             ),
 
             const SizedBox(height: AppSpacing.xl),
@@ -216,27 +228,28 @@ class _DateField extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onTap,
+    this.onClear,
   });
 
   final String label;
   final String value;
   final VoidCallback onTap;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -246,13 +259,19 @@ class _DateField extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          if (onClear != null)
+            IconButton(
+              onPressed: onClear,
+              icon: const Icon(Icons.close, color: AppColors.textSecondary),
+            )
+          else
             const Icon(
               Icons.calendar_today_outlined,
               size: 20,
               color: AppColors.textSecondary,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
