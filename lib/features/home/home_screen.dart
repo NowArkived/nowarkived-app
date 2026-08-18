@@ -61,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadAssets() async {
     final storedAssets = await AssetStorage.loadAssets();
-
     final assets = storedAssets ?? List<Asset>.from(sampleAssets);
 
     if (storedAssets == null) {
@@ -92,10 +91,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openAsset(Asset asset) async {
-    final updatedAsset = await Navigator.push<Asset>(
+    final result = await Navigator.push<AssetDetailResult>(
       context,
       MaterialPageRoute(builder: (_) => AssetDetailScreen(asset: asset)),
     );
+
+    if (result == null) return;
+
+    if (result.deleted) {
+      setState(() {
+        _assets.removeWhere((item) => item.id == asset.id);
+      });
+
+      await AssetStorage.saveAssets(_assets);
+      return;
+    }
+
+    final updatedAsset = result.asset;
 
     if (updatedAsset == null) return;
 
@@ -118,6 +130,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return Icons.description_outlined;
       case 'vehicles':
         return Icons.directions_car_outlined;
+      case 'home':
+        return Icons.home_outlined;
+      case 'appliances':
+        return Icons.kitchen_outlined;
+      case 'jewelry':
+        return Icons.diamond_outlined;
       default:
         return Icons.inventory_2_outlined;
     }
@@ -172,21 +190,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               _searchQuery = '';
                             });
                           },
-                          icon: const Icon(
-                            Icons.close,
-                            color: AppColors.textSecondary,
-                          ),
+                          icon: const Icon(Icons.close),
                         ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: AppColors.accent),
-                  ),
                 ),
               ),
 
@@ -195,17 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _searchQuery.isEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Attention', style: AppTypography.heading),
-                    ),
-                    Text(
-                      '${reminders.length}',
-                      style: AppTypography.bodySecondary,
-                    ),
-                  ],
-                ),
+                Text('Attention', style: AppTypography.heading),
 
                 const SizedBox(height: AppSpacing.sm),
 
@@ -218,7 +213,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final reminder = reminders[index];
-
                       final expired =
                           reminder.status == WarrantyReminderStatus.expired;
 
@@ -247,9 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? AppColors.error
                                     : AppColors.warning,
                               ),
-
                               const SizedBox(width: AppSpacing.md),
-
                               Expanded(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -266,8 +258,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
                                       reminder.message,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                       style: AppTypography.bodySecondary,
                                     ),
                                   ],
@@ -293,26 +283,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     : filteredAssets.isEmpty
                     ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.search_off_outlined,
-                              size: 32,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              'No assets found',
-                              style: AppTypography.heading,
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Try another name, category or document.',
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodySecondary,
-                            ),
-                          ],
+                        child: Text(
+                          'No assets found',
+                          style: AppTypography.heading,
                         ),
                       )
                     : ListView.separated(
@@ -339,9 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: AppColors.accent,
                                     ),
                                   ),
-
                                   const SizedBox(width: AppSpacing.md),
-
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -365,7 +336,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ],
                                     ),
                                   ),
-
                                   const Icon(
                                     Icons.chevron_right,
                                     color: AppColors.textSecondary,

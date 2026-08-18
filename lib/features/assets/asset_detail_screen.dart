@@ -6,8 +6,18 @@ import '../../design/app_colors.dart';
 import '../../design/app_spacing.dart';
 import '../../design/app_typography.dart';
 import 'add_document_screen.dart';
+import 'edit_asset_screen.dart';
 import 'models/asset.dart';
 import 'models/asset_document.dart';
+
+class AssetDetailResult {
+  const AssetDetailResult.updated(this.asset) : deleted = false;
+
+  const AssetDetailResult.deleted() : asset = null, deleted = true;
+
+  final Asset? asset;
+  final bool deleted;
+}
 
 class AssetDetailScreen extends StatefulWidget {
   const AssetDetailScreen({super.key, required this.asset});
@@ -40,8 +50,61 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
     });
   }
 
+  Future<void> _editAsset() async {
+    final updatedAsset = await Navigator.push<Asset>(
+      context,
+      MaterialPageRoute(builder: (_) => EditAssetScreen(asset: _asset)),
+    );
+
+    if (updatedAsset == null) return;
+
+    setState(() {
+      _asset = updatedAsset;
+    });
+  }
+
+  Future<void> _deleteAsset() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text('Delete asset?', style: AppTypography.heading),
+          content: Text(
+            'This will remove ${_asset.name} and its saved document records.',
+            style: AppTypography.body,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: Text('Cancel', style: AppTypography.body),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: Text(
+                'Delete',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    Navigator.pop(context, const AssetDetailResult.deleted());
+  }
+
   void _goBack() {
-    Navigator.pop(context, _asset);
+    Navigator.pop(context, AssetDetailResult.updated(_asset));
   }
 
   String _formatDate(DateTime date) {
@@ -51,7 +114,6 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
   String _warrantyStatus(DateTime expiry) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-
     final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
 
     final days = expiryDate.difference(today).inDays;
@@ -102,9 +164,31 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back),
         ),
         title: Text('Asset details', style: AppTypography.heading),
+        actions: [
+          IconButton(
+            onPressed: _editAsset,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete') {
+                _deleteAsset();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'delete',
+                child: Text(
+                  'Delete asset',
+                  style: AppTypography.body.copyWith(color: AppColors.error),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -168,9 +252,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                       label: 'Warranty',
                       value: _formatDate(_asset.warrantyExpiry!),
                     ),
-
                     const SizedBox(height: AppSpacing.sm),
-
                     Text(
                       _warrantyStatus(_asset.warrantyExpiry!),
                       style: AppTypography.bodySecondary.copyWith(
@@ -223,22 +305,11 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: Row(
                           children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.background,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.description_outlined,
-                                color: AppColors.accent,
-                                size: 20,
-                              ),
+                            const Icon(
+                              Icons.description_outlined,
+                              color: AppColors.accent,
                             ),
-
                             const SizedBox(width: AppSpacing.md),
-
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
